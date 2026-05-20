@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Hand Gesture Detection</title>
+
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: black;
+            font-family: Arial, sans-serif;
+        }
+
+        h1 {
+            position: absolute;
+            top: 20px;
+            width: 100%;
+            text-align: center;
+            color: white;
+            z-index: 10;
+        }
+
+        /* Webcam box */
+        #video-container {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            width: 600px;
+            height: 400px;
+            border: 2px solid white;
+            border-radius: 12px;
+            overflow: hidden;
+            background: black;
+            z-index: 20;
+        }
+
+        video,
+        #output_canvas {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transform: scaleX(-1);
+        }
+
+        /* Fullscreen effect canvas */
+        #effect_canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+    </style>
+
+    <!-- MediaPipe -->
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
+</head>
+
+<body>
+
+    <h1 id="status">Starting...</h1>
+
+    <!-- Fullscreen effect canvas -->
+    <canvas id="effect_canvas"></canvas>
+
+    <!-- Webcam UI -->
+    <div id="video-container">
+        <video class="input_video"></video>
+        <canvas id="output_canvas"></canvas>
+    </div>
+
+    <script>
+
+        // Elements
+        const video = document.querySelector(".input_video");
+
+        const outputCanvas = document.getElementById("output_canvas");
+        const outputCtx = outputCanvas.getContext("2d");
+
+        const effectCanvas = document.getElementById("effect_canvas");
+        const effectCtx = effectCanvas.getContext("2d");
+
+        const statusText = document.getElementById("status");
+
+        // Fullscreen canvas size
+        effectCanvas.width = window.innerWidth;
+        effectCanvas.height = window.innerHeight;
+
+        let bgColor = "black";
+
+        // Draw fullscreen background
+        function drawBackground() {
+            effectCtx.fillStyle = bgColor;
+            effectCtx.fillRect(
+                0,
+                0,
+                effectCanvas.width,
+                effectCanvas.height
+            );
+        }
+
+        // MediaPipe Hands
+        const hands = new Hands({
+            locateFile: (file) => {
+                return `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`;
+            }
+        });
+
+        hands.setOptions({
+            maxNumHands: 1,
+            modelComplexity: 1,
+            minDetectionConfidence: 0.7,
+            minTrackingConfidence: 0.7
+        });
+
+        hands.onResults((results) => {
+
+            // Clear webcam overlay canvas
+            outputCtx.save();
+            outputCtx.clearRect(
+                0,
+                0,
+                outputCanvas.width,
+                outputCanvas.height
+            );
+
+            // Draw webcam image
+            outputCtx.drawImage(
+                results.image,
+                0,
+                0,
+                outputCanvas.width,
+                outputCanvas.height
+            );
+
+            drawBackground();
+
+            if (
+                results.multiHandLandmarks &&
+                results.multiHandLandmarks.length > 0
+            ) {
+
+                const landmarks = results.multiHandLandmarks[0];
+
+                // Draw hand skeleton
+                drawConnectors(
+                    outputCtx,
+                    landmarks,
+                    HAND_CONNECTIONS,
+                    {
+                        color: "#00FFFF",
+                        lineWidth: 4
+                    }
+                );
+
+                // Draw finger points
+                drawLandmarks(
+                    outputCtx,
+                    landmarks,
+                    {
+                        color: "#FFFFFF",
+                        lineWidth: 2,
+                        radius: 4
+                    }
+                );
+
+                // Thumb tip
+                const thumb = landmarks[4];
+
+                // Index tip
+                const index = landmarks[8];
+
+                // Distance
+                const distance = Math.hypot(
+                    index.x - thumb.x,
+                    index.y - thumb.y
+                );
+
+                // Gesture logic
+                if (distance < 0.05) {
+                    bgColor = "darkred";
+                    statusText.innerText = "Fist Hand DETECTED";
+                }
+                else {
+                    bgColor = "darkblue";
+                    statusText.innerText = "Open Hand DETECTED";
+                }
+
+            } else {
+
+                bgColor = "black";
+                statusText.innerText = "NO HAND";
+            }
+
+            outputCtx.restore();
+        });
+
+        // Camera
+        const camera = new Camera(video, {
+            onFrame: async () => {
+
+                outputCanvas.width = video.videoWidth;
+                outputCanvas.height = video.videoHeight;
+
+                await hands.send({
+                    image: video
+                });
+            },
+            width: 640,
+            height: 480
+        });
+
+        camera.start();
+
+        // Resize handling
+        window.addEventListener("resize", () => {
+
+            effectCanvas.width = window.innerWidth;
+            effectCanvas.height = window.innerHeight;
+        });
+
+    </script>
+
+</body>
+
+</html>
