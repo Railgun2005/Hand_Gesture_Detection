@@ -65,7 +65,7 @@ Gesture classification is based on landmark distance calculations using MediaPip
 # 🌐 Live Demo
 
 ```txt
-
+https://hand-gesture-detection-hh2ooxc4z-herry-projects.vercel.app/
 ```
 
 ---
