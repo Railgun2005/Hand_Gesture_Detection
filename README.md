@@ -62,6 +62,14 @@ Gesture classification is based on landmark distance calculations using MediaPip
 
 ---
 
+# 🌐 Live Demo
+
+```txt
+
+```
+
+---
+
 # 📸 Preview
 
 ![Preview 1](Resources/img0.png)
@@ -123,13 +131,3 @@ The current gesture system is intentionally minimal and can be expanded further 
 # 👨‍💻 Author
 
 ### Herry Patel
-
----
-
-# 🔒 License
-
-This project is closed-source and proprietary.
-
-Unauthorized copying, modification, distribution, or reuse of the source code is prohibited.
-
-All rights reserved © Herry Patel
